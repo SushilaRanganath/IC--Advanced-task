@@ -1,0 +1,35 @@
+USE [property]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_calculatedistanceForRentalMedian]    Script Date: 22/02/2023 7:57:28 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER PROCEDURE [dbo].[usp_calculatedistanceForRentalMedian]	-- Add the parameters for the stored procedure here
+	  @subcity NVARCHAR(100), @Distance INT, @subgeo geography
+AS
+BEGin
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+	DECLARE  @Lattitude FLOAT, @Longitude FLOAT;
+SELECT	@Lattitude = [Lattitude], @Longitude = [Longitude], @subcity = CityTown, @SubGeo = subgeo
+	FROM [dbo].[dim suburb] AS DS
+	WHERE
+	 DS.SubGeo = 'sydney'
+		SET @SubGeo = geography :: Point(@Lattitude,@Longitude,4326)
+SELECT	DT.MODE, DT.StopName, DT.Suburb,
+			
+			CONCAT((ROUND((@SubGeo.STDistance(geography::Point(ISNULL(DS.[Lattitude],0),ISNULL(DS.[Longitude],0),4326))/1000),2)),' ','KM') AS DistanceInKM
+			
+	FROM [dbo].[DimTransportStation] as DT
+	JOIN [dbo].[dim suburb] AS DS ON DT.[Suburb + postcode] = DS.[Suburb + Postcode]
+		where (@SubGeo.STDistance(geography::Point(ISNULL(DS.[Lattitude],0),ISNULL(DS.[Longitude],0),4326))/1000)<= '1'
+		
+				AND DS.Longitude IS NOT NULL
+				and DS.Lattitude is NOT NULL
